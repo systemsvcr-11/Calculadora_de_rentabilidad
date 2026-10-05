@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#263238">
+  <title>Restaurante · Costos y Rentabilidad</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div id="toast" class="toast"></div>
+  <div id="loading" class="loading-overlay hidden"><div class="spinner"></div><span>Cargando datos...</span></div>
+
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">🍽️</div>
+        <div>
+          <div id="restaurantName" class="brand-name">Mi Restaurante</div>
+          <div class="brand-subtitle">Costos & Rentabilidad</div>
+        </div>
+      </div>
+      <nav class="nav">
+        <button class="nav-btn active" data-view="dashboard">📊 <span>Dashboard</span></button>
+        <button class="nav-btn" data-view="dishes">🍽️ <span>Platos</span></button>
+        <button class="nav-btn" data-view="ingredients">📦 <span>Ingredientes</span></button>
+        <button class="nav-btn" data-view="recipes">🧩 <span>Recetas</span></button>
+        <button class="nav-btn" data-view="simulator">🧮 <span>Simulador</span></button>
+        <button class="nav-btn" data-view="settings">⚙️ <span>Configuración</span></button>
+      </nav>
+      <div class="sidebar-note">GitHub Pages + Apps Script + Google Sheets</div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <h1 id="viewTitle">Dashboard</h1>
+          <p id="viewSubtitle">Control general de costos y rentabilidad.</p>
+        </div>
+        <button id="refreshBtn" class="btn btn-primary">↻ Actualizar</button>
+      </header>
+
+      <section id="view-dashboard" class="view active">
+        <div id="dashboardCards" class="cards"></div>
+        <div class="grid-2">
+          <div class="panel"><div class="panel-head"><div><h2>Platos bajo objetivo</h2><p>Solo platos con precio de venta configurado.</p></div></div><div id="riskTable"></div></div>
+          <div class="panel"><div class="panel-head"><div><h2>Platos más rentables</h2><p>Ordenados por margen actual.</p></div></div><div id="topTable"></div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div><h2>Impacto de cambio de precio</h2><p>Simula el cambio de costo de un ingrediente y ve los platos afectados.</p></div></div>
+          <div class="impact-controls">
+            <label>Ingrediente<select id="impactIngredient"></select></label>
+            <label>Nuevo precio de compra<input id="impactPrice" type="number" min="0" step="0.01" placeholder="Ej. 180"></label>
+            <button id="impactBtn" class="btn btn-primary">Analizar</button>
+          </div>
+          <div id="impactResult" class="empty">Selecciona un ingrediente y coloca el nuevo precio.</div>
+        </div>
+      </section>
+
+      <section id="view-dishes" class="view">
+        <div class="panel">
+          <div class="panel-head"><div><h2>Precios de platos</h2><p>Las recetas finales vienen de tu migración. Aquí defines el precio de venta.</p></div><input id="dishSearch" class="search" placeholder="Buscar plato..."></div>
+          <div id="dishesTable"></div>
+        </div>
+      </section>
+
+      <section id="view-ingredients" class="view">
+        <div class="panel">
+          <div class="panel-head"><div><h2>Ingredientes</h2><p>Todos los insumos importados desde la hoja <strong>ingredientes</strong>.</p></div><input id="ingredientSearch" class="search" placeholder="Buscar ingrediente..."></div>
+          <div id="ingredientsTable"></div>
+        </div>
+      </section>
+
+      <section id="view-recipes" class="view">
+        <div class="panel">
+          <div class="panel-head"><div><h2>Recetas y subrecetas</h2><p>Explora la estructura jerárquica que se importó desde tus hojas actuales.</p></div><input id="recipeSearch" class="search" placeholder="Buscar receta..."></div>
+          <div id="recipesTable"></div>
+        </div>
+      </section>
+
+      <section id="view-simulator" class="view">
+        <div class="panel">
+          <div class="panel-head"><div><h2>Simulador de plato</h2><p>Cambia cantidades o reemplaza componentes sin alterar la receta real.</p></div></div>
+          <div class="sim-top">
+            <label>Plato<select id="simDish"></select></label>
+            <label>Precio de venta<input id="simPrice" type="number" min="0" step="0.01"></label>
+          </div>
+          <div class="simulation-layout">
+            <div>
+              <div class="section-row"><h3>Receta simulada</h3><button type="button" id="addSimRowBtn" class="btn btn-secondary">+ Agregar componente</button></div>
+              <div id="simRows" class="recipe-rows"></div>
+              <div class="form-actions"><button id="resetSimulationBtn" class="btn btn-secondary">Restablecer</button><button id="saveSimulationBtn" class="btn btn-primary">Guardar simulación</button></div>
+            </div>
+            <div id="simSummary" class="sim-summary"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-settings" class="view">
+        <div class="panel settings-panel">
+          <div class="panel-head"><div><h2>Configuración</h2><p>Define el margen objetivo y parámetros económicos.</p></div></div>
+          <form id="settingsForm">
+            <div class="form-grid">
+              <label>Nombre del restaurante<input id="cfgRestaurant"></label>
+              <label>Margen objetivo %<input id="cfgMargin" type="number" min="0" max="99.99" step="0.01"></label>
+              <label>Impuesto de venta %<input id="cfgTax" type="number" min="0" max="100" step="0.01"></label>
+              <label>Costo indirecto por plato<input id="cfgIndirect" type="number" min="0" step="0.01"></label>
+              <label>Redondeo de precio<input id="cfgRound" type="number" min="0" step="0.01"></label>
+            </div>
+            <div class="hint">El precio recomendado mantiene el margen objetivo sobre el precio neto. Si configuras impuesto, se añade al precio final.</div>
+            <div class="form-actions"><button class="btn btn-primary" type="submit">Guardar configuración</button></div>
+          </form>
+          <div class="panel-subsection"><h3>Estado de la integración</h3><div id="apiStatus" class="status-box">Comprobando...</div></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
